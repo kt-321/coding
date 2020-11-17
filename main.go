@@ -62,14 +62,14 @@ func getCity(url string) (*City, error) {
 		return nil, err
 	}
 
-	//②Client型
+	//②Client 型の Get(url) メソッドを実行
 	//client := &http.Client{}
 	//resp, err := client.Get(url)
 	//if err != nil {
 	//	fmt.Println(err)
 	//}
 
-	//③Client.Do(Request)メソッド
+	//③Client 型の Do(request) メソッド
 	//req, err := http.NewRequest("GET", url, nil)
 	//if err != nil {
 	//	fmt.Println(err)
