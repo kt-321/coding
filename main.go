@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"time"
 )
 
 type City struct {
@@ -54,19 +53,36 @@ type City struct {
 func getCity(url string) (*City, error) {
 	var city City
 
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		fmt.Println(err)
-	}
+	//https://qiita.com/jpshadowapps/items/463b2623209479adcd88 参照
 
-	client := &http.Client{
-		Timeout: 15 * time.Second,
-	}
+	//①http.Get(url)によるGET
+	//resp, err := http.Get(url)
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return nil, err
+	//}
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
+	//②Client型
+	//client := &http.Client{}
+	//resp, err := client.Get(url)
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+
+	//③Client.Do(Request)メソッド
+	//req, err := http.NewRequest("GET", url, nil)
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return nil, err
+	//}
+	//
+	//client := &http.Client{}
+	//
+	//resp, err := client.Do(req)
+	//if err != nil {
+	//	return nil, err
+	//}
+
 
 	defer resp.Body.Close()
 
