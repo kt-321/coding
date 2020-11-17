@@ -50,7 +50,6 @@ type City struct {
 	Cod      int    `json:"cod"`
 }
 
-
 //API叩いて都市情報取得
 func getCity(url string) (*City, error) {
 	var city City
@@ -59,7 +58,6 @@ func getCity(url string) (*City, error) {
 	if err != nil {
 		fmt.Println(err)
 	}
-
 
 	client := &http.Client{
 		Timeout: 15 * time.Second,
@@ -84,11 +82,8 @@ func getCity(url string) (*City, error) {
 	return &city, nil
 }
 
-
-
-
 func main() {
-	urls := []string {
+	urls := []string{
 		"https://api.openweathermap.org/data/2.5/weather?q=Tokyo&APPID=bc0bad98583f474e3ae5166d871415f0",
 		"https://api.openweathermap.org/data/2.5/weather?q=London&APPID=bc0bad98583f474e3ae5166d871415f0",
 		"https://api.openweathermap.org/data/2.5/weather?q=Paris&APPID=bc0bad98583f474e3ae5166d871415f0",
@@ -106,4 +101,3 @@ func main() {
 		fmt.Printf("%v : %v\n", result.Name, w.Description)
 	}
 }
-
