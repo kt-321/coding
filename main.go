@@ -56,11 +56,11 @@ func getCity(url string) (*City, error) {
 	//https://qiita.com/jpshadowapps/items/463b2623209479adcd88 参照
 
 	//①http.Get(url)によるGET
-	//resp, err := http.Get(url)
-	//if err != nil {
-	//	fmt.Println(err)
-	//	return nil, err
-	//}
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
 
 	//②Client型
 	//client := &http.Client{}
