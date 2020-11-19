@@ -1,10 +1,15 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
+
+	"github.com/gorilla/mux"
 )
 
 type City struct {
@@ -49,53 +54,81 @@ type City struct {
 	Cod      int    `json:"cod"`
 }
 
-//API叩いて都市情報取得
-func getCity(url string) (*City, error) {
-	var city City
+type CityController struct {
+	CityInteractor CityInteractor
+}
 
-	//https://qiita.com/jpshadowapps/items/463b2623209479adcd88 参照
+type CityInteractor struct {
+	CityRepository CityRepository
+}
 
-	//①http.Get(url)によるGET
+func (ci *CityInteractor) Show(url string) (*City, error) {
+	return ci.CityRepository.getCity(url)
+}
+
+type CityRepository struct {}
+
+type CityRepositoryInterface interface {
+	getCity(string) (*City, error)
+}
+
+func NewCityController() *CityController {
+	return &CityController{
+		CityInteractor: CityInteractor{
+			CityRepository: CityRepository{},
+		},
+	}
+}
+
+func (cc *CityController) GetCityHandler(w http.ResponseWriter, r *http.Request) {
+	//city, err := cc.CityInteractor.getCity()
+}
+
+
+func getCity(url string) (*City, error){
 	resp, err := http.Get(url)
-	if err != nil {
-		fmt.Println(err)
+	if err != nil{
 		return nil, err
 	}
 
-	//②Client 型の Get(url) メソッドを実行
 	//client := &http.Client{}
 	//resp, err := client.Get(url)
 	//if err != nil {
-	//	fmt.Println(err)
+	//	return nil, err
 	//}
 
-	//③Client 型の Do(request) メソッド
 	//req, err := http.NewRequest("GET", url, nil)
 	//if err != nil {
-	//	fmt.Println(err)
 	//	return nil, err
 	//}
 	//
 	//client := &http.Client{}
-	//
 	//resp, err := client.Do(req)
-	//if err != nil {
-	//	return nil, err
-	//}
-
 
 	defer resp.Body.Close()
 
-	b, err := ioutil.ReadAll(resp.Body)
+	result, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := json.Unmarshal(b, &city); err != nil {
+	var city City
+	if err:= json.Unmarshal(result, &city); err != nil {
 		return nil, err
 	}
 
 	return &city, nil
+}
+
+func Dispatch() {
+	cityController := NewCityController()
+
+	r := mux.NewRouter()
+	r.HandlerFunc("/api/cirty/{url}", cityController.GetCityHandler).Methods("GET")
+
+	if err := http.ListenAndServe(":8084", r); err != nil {
+		log.Println(err)
+	}
 }
 
 func main() {
@@ -108,12 +141,10 @@ func main() {
 	}
 
 	for _, v := range urls {
-		result, err := getCity(v)
+		city, err := getCity(v)
 		if err != nil {
 			fmt.Println(err)
 		}
-
-		w := result.Weather[0]
-		fmt.Printf("%v : %v\n", result.Name, w.Description)
+		fmt.Printf("%v : %v\n", city.Name, city.Weather[0].Description)
 	}
 }
