@@ -85,7 +85,7 @@ func getCity(url string) (*City, error) {
 
 
 	defer resp.Body.Close()
-
+	//ioutil.ReadAll関数はバイトスライスを返している
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
