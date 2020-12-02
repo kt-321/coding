@@ -277,6 +277,7 @@ func exercise() {
 
 }
 
+//13
 func run(ctx context.Context) int {
 	eg, ctx := errgroup.WithContext(ctx)
 	//fmt.Printf("%T: %v\n", eg, eg)
@@ -321,10 +322,19 @@ func runServer(ctx context.Context) error {
 		}
 	}()
 
+	go func() {
+		for {
+			time.Sleep(2 * time.Second)
+			fmt.Println("runServer処理中...")
+		}
+	}()
+
 	select {
 	case <-ctx.Done():
+		fmt.Println("runSeverのctx.Doneチャネル")
 		return s.Shutdown(ctx)
 	case err := <-errCh:
+		fmt.Println("runSeverのerrCh!!")
 		return err
 	}
 
@@ -350,9 +360,11 @@ func acceptSignal(ctx context.Context) error {
 
 	select {
 	case <-ctx.Done():
+		fmt.Println("acceptSignalのctx.Doneチャネル")
 		signal.Reset()
 		return ctx.Err()
 	case sig := <-sigCh:
+		fmt.Println("acceptSignalのerrCh!!")
 		return fmt.Errorf("signal received: %v", sig.String())
 	}
 
