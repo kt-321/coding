@@ -3,6 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"golang.org/x/sync/errgroup"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"time"
 )
 
 //⑩
@@ -125,6 +131,7 @@ func main() {
 
 
 	//11 ゴルーチンを跨いだ処理のキャンセル
+	//cf. 関数の書き方
 	//gen := func(ctx context.Context) <-chan int {
 	//	dst := make(chan int)
 	//	n := 1
@@ -143,10 +150,11 @@ func main() {
 	//bc := context.Background() //ルートになるコンテキスト
 	//ctx, cancel := context.WithCancel(bc) //ルートになるコンテキストをラップしてキャンセル機能のついたコンテキストを生成
 	//defer cancel() //contextのDoneメソッドで返ってくるチャネル(Doneチャネル)がクローズされる。Doneメソッドで待っていたチャネルに終了が告げられる。
-
-	////チャネルもfor rangeで回すことができる。
+	//
+	////チャネルもfor rangeで回すことができる。チャネルを受け取るたびnに値(int)が入る。
 	//for n := range gen(ctx) {
-	//	fmt.Println(n)
+	//	//fmt.Println(n)
+	//	fmt.Printf("%T: %v\n", n, n)
 	//	if n == 20 { break }
 	//}
 
@@ -171,16 +179,182 @@ func main() {
 	//	fmt.Println(ctx.Err()) //「deadline exceeded」というキャンセルされたというエラーが返ってくる
 	//}
 
+
+	//13 sync.errgroup
+	//test1 := func() error {
+	//	return nil
+	//	//return errors.New("test1")
+	//}
+	//
+	//test2 := func() error {
+	//	//return nil
+	//	return errors.New("test2")
+	//}
+	//
+	//ctx := context.Background()
+	//var eg *errgroup.Group
+	//
+	//eg, ctx = errgroup.WithContext(ctx)
+	//
+	//eg.Go(func() error {
+	//	return test1()
+	//})
+	//eg.Go(func() error {
+	//	return test2()
+	//})
+	//eg.Go(func() error {
+	//	//fmt.Printf("%T: %v\n", ctx.Done(), ctx.Done())
+	//	// この書き方覚える。受信専用チャネル。
+	//	<-ctx.Done()
+	//	//fmt.Printf("%T: %v\n", ctx.Err(), ctx.Err())
+	//	return ctx.Err()
+	//})
+	//
+	//if err := eg.Wait(); err != nil {
+	//	log.Println(err)
+	//}
+
+	//13の練習
+	defer fmt.Println("test")
+	os.Exit(run(context.Background()))
+
+	//練習用
+	//exercise()
 }
 
 //13 WithValueでコンテキストに値を持たせる
-type withoutCacheKey struct{}
-func WithoutCache(c context.Context) context.Context {
-	if IsIgnoredCache(c) {
-		return c
-	}
-	return context.WithValue(c, withoutCacheKey{}, struct{}{})
+//type withoutCacheKey struct{}
+//func WithoutCache(c context.Context) context.Context {
+//	if IsIgnoredCache(c) {
+//		return c
+//	}
+//	return context.WithValue(c, withoutCacheKey{}, struct{}{})
+//}
+//func IsIgnoredCache(c context.Context) bool {
+//	return c.Value(withoutCacheKey{}) != nil
+//}
+
+
+func exercise() {
+	//11の練習
+	//bc := context.Background()
+	//ctx, cancel := context.WithCancel(bc)
+	//defer cancel()
+	//
+	//gen := func(ctx context.Context) <-chan int {
+	//	dst := make(chan int)
+	//	n := 1
+	//	go func() {
+	//		for {
+	//			select {
+	//			case <-ctx.Done(): return
+	//			//送信の書き方
+	//			case dst <- n: n++
+	//			}
+	//		}
+	//	}()
+	//	return dst
+	//}
+	//
+	////for rangeの書き方 https://qiita.com/najeira/items/71a0bcd079c9066347b4
+	//for n:= range gen(ctx) {
+	//	fmt.Println(n)
+	//	if n == 20 { break }
+	//}
+
+	//12の練習
+	//bc := context.Background()
+	//t := 50*time.Millisecond
+	//ctx, cancel := context.WithTimeout(bc, t)
+	//defer cancel()
+	//
+	//select {
+	//case <- time.After(1 * time.Second):
+	//	fmt.Println("overslept")
+	//case <- ctx.Done():
+	//	fmt.Println(ctx.Err())
+	//}
+
 }
-func IsIgnoredCache(c context.Context) bool {
-	return c.Value(withoutCacheKey{}) != nil
+
+func run(ctx context.Context) int {
+	eg, ctx := errgroup.WithContext(ctx)
+	//fmt.Printf("%T: %v\n", eg, eg)
+	//fmt.Printf("%T: %v\n", ctx, ctx)
+
+	eg.Go(func() error {
+		//fmt.Println("error1")
+		//return errors.New("test1")
+		return runServer(ctx)
+	})
+	eg.Go(func() error {
+		//fmt.Println("error2")
+		//return errors.New("test2")
+		return acceptSignal(ctx)
+	})
+	eg.Go(func() error{
+		<-ctx.Done()
+		fmt.Println("ctx.Done()")
+		return ctx.Err()
+	})
+
+	if err := eg.Wait(); err != nil {
+		log.Println(err)
+		return 1
+	}
+	log.Println("0!")
+	return 0
+}
+
+func runServer(ctx context.Context) error {
+	s := &http.Server{
+		Addr: ":8888",
+		Handler: nil,
+	}
+
+	errCh := make(chan error)
+	go func() {
+		defer close(errCh)
+		if err := s.ListenAndServe(); err != nil {
+			//チャネルへの値の入れ方
+			errCh <- err
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return s.Shutdown(ctx)
+	case err := <-errCh:
+		return err
+	}
+
+
+	//return errors.New("runServerError")
+}
+
+func acceptSignal(ctx context.Context) error {
+	sigCh := make(chan os.Signal, 1)
+
+	//受け取るシグナルを設定
+	//"os.Interrupt"は、Ctrl+C で中断されるときに送られるシグナル(SIGINT)のこと
+	signal.Notify(sigCh, os.Interrupt)
+
+	// シグナル待機中にやりたい処理 ※goroutine(並行処理)で書く
+	go func() {
+		for {
+			time.Sleep(2 * time.Second)
+			fmt.Println("acceptSignal処理中...")
+		}
+	}()
+
+
+	select {
+	case <-ctx.Done():
+		signal.Reset()
+		return ctx.Err()
+	case sig := <-sigCh:
+		return fmt.Errorf("signal received: %v", sig.String())
+	}
+
+	//return errors.New("signalError")
 }
