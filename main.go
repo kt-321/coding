@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"golang.org/x/sync/errgroup"
 	"log"
@@ -112,13 +113,40 @@ func main() {
 	//	fmt.Println("done1")
 	//	wg.Done()
 	//}()
+	//
 	//wg.Add(1)
 	//go func() {
 	//	fmt.Println("done2")
 	//	wg.Done()
 	//} ()
+
+	//var wg sync.WaitGroup
+	//for i:=0; i<10; i++ {
+	//	wg.Add(1)
+	//	go func(i int) { //引数を追加
+	//		defer wg.Done()
+	//		fmt.Println(i)
+	//	}(i) //関数実行時に現在の値を渡している
+	//
+	//	//go func() {
+	//	//	defer wg.Done()
+	//	//	fmt.Println(i) //これだとループの最後の値になってしまうことが多い
+	//	//} ()
+	//}
 	//wg.Wait()
-	//fmt.Println("unlock")
+	//fmt.Println("unlock1")
+	//
+	//for i:=0; i<20; i++ {
+	//	wg.Add(1)
+	//	go func(i int) {
+	//		defer wg.Done()
+	//		fmt.Printf("%v回目\n", i)
+	//	}(i)
+	//}
+	//wg.Wait()
+	//fmt.Println("unlock2")
+
+
 
 	//⑨TODO　golang.org/x/sync/errgroup
 
@@ -180,46 +208,79 @@ func main() {
 	//}
 
 
-	//13 sync.errgroup
-	//test1 := func() error {
-	//	return nil
-	//	//return errors.New("test1")
-	//}
-	//
-	//test2 := func() error {
-	//	//return nil
-	//	return errors.New("test2")
-	//}
-	//
-	//ctx := context.Background()
-	//var eg *errgroup.Group
-	//
-	//eg, ctx = errgroup.WithContext(ctx)
-	//
-	//eg.Go(func() error {
-	//	return test1()
-	//})
-	//eg.Go(func() error {
-	//	return test2()
-	//})
-	//eg.Go(func() error {
-	//	//fmt.Printf("%T: %v\n", ctx.Done(), ctx.Done())
-	//	// この書き方覚える。受信専用チャネル。
-	//	<-ctx.Done()
-	//	//fmt.Printf("%T: %v\n", ctx.Err(), ctx.Err())
-	//	return ctx.Err()
-	//})
-	//
-	//if err := eg.Wait(); err != nil {
-	//	log.Println(err)
-	//}
+	//13 sync.errgroup(errgroup.Group)
+	test1 := func(ctx context.Context) error {
+		fmt.Printf("test1にて%T: %v\n", ctx, ctx)
+
+		errCh := make(chan error)
+		//fmt.Printf("%T: %v\n", errCh, errCh)
+
+		//defer close(errCh)
+
+		go func() {
+			//チャネルクローズするのを忘れないように
+			defer close(errCh)
+			errCh <-errors.New("test1のエラー")
+		}()
+
+
+		select {
+		case <-ctx.Done():
+			fmt.Println("test1にてctx.Doneチャネル受信")
+			return ctx.Err()
+		case err:= <-errCh:
+			fmt.Printf("test1にてerrCh受信:%T:%v\n", err, err)
+			return err
+		}
+	}
+	test2 := func(ctx context.Context) error {
+		//time.Sleep(3*time.Second)
+		//return errors.New("test2")
+
+		errCh := make(chan error)
+		go func(){
+			errCh <- errors.New("test2のエラー")
+		}()
+
+		select {
+		case <-ctx.Done():
+			fmt.Println("test2にてctx.Doneチャネル受信")
+			return ctx.Err()
+		case err := <-errCh:
+			fmt.Printf("test2にて%T:%v\n", err, err)
+			return err
+		}
+	}
+
+	ctx := context.Background()
+
+	var eg *errgroup.Group
+	eg, ctx = errgroup.WithContext(ctx)
+
+	eg.Go(func() error {
+		return test1(ctx)
+	})
+	eg.Go(func() error {
+		return test2(ctx)
+	})
+	eg.Go(func() error {
+		//fmt.Printf("%T: %v\n", ctx.Done(), ctx.Done())
+		// この書き方覚える。受信専用チャネル。
+		<-ctx.Done()
+		//fmt.Printf("%T: %v\n", ctx.Err(), ctx.Err())
+		return ctx.Err()
+	})
+
+	if err := eg.Wait(); err != nil {
+		log.Println(err)
+	}
 
 	//13の練習
-	defer fmt.Println("test")
-	os.Exit(run(context.Background()))
+	//defer fmt.Println("test")
+	//os.Exit(run(context.Background()))
 
 	//練習用
-	//exercise()
+	exercise()
 }
 
 //13 WithValueでコンテキストに値を持たせる
@@ -236,6 +297,52 @@ func main() {
 
 
 func exercise() {
+	//6の練習
+	//var m sync.Mutex
+	//m.Lock()
+	//fmt.Println("locked")
+	//go func() {
+	//	time.Sleep(3*time.Second)
+	//	fmt.Println("lock解除")
+	//	m.Unlock()
+	//}()
+	//m.Lock()
+	//m.Unlock()
+	//fmt.Println("unlocked")
+
+	//7の練習
+	//var m sync.RWMutex
+	//m.RLock()
+	//fmt.Println("locked")
+	//go func() {
+	//	time.Sleep(3*time.Second)
+	//	fmt.Println("lock解除する")
+	//	m.RUnlock()
+	//}()
+	//m.RLock()
+	//fmt.Println("ここは出力されない")
+	//m.RUnlock()
+	//fmt.Println("unlocked")
+
+	//10の練習
+	//var once sync.Once
+	////once.Do(onceTest)
+	//
+	//for i:=1; i<10; i++ {
+	//	go func(i int) {
+	//		once.Do(onceTest)
+	//		fmt.Println(i)
+	//	}(i )
+	//}
+	//
+	//go func() {
+	//	fmt.Println("ループ外")
+	//	once.Do(onceTest)
+	//}()
+	//
+	//time.Sleep(10*time.Second) //スリープしないとgo分より先にmainが終了されてしまう
+
+
 	//11の練習
 	//bc := context.Background()
 	//ctx, cancel := context.WithCancel(bc)
@@ -275,6 +382,11 @@ func exercise() {
 	//	fmt.Println(ctx.Err())
 	//}
 
+}
+
+//10の練習用
+func onceTest() {
+	fmt.Println("一回だけ実行される")
 }
 
 //13
