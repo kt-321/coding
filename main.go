@@ -79,13 +79,20 @@ func main() {
 	//a（配列）の値、サイズは変わってない
 	fmt.Printf("%T: %v, %v\n", a, a, len(a))
 
-	//③長さ1で容量2となる  [test2] →　スライスの最初の要素から数えて、元となる配列の要素数なので容量２
+	//③長さ1で容量1となる →　スライスの最初の要素から数えて、元となる配列の要素数なので容量1
 	slice3 := a[2:]
 	fmt.Printf("%T, %v, %v, %v\n", slice3, len(slice3), cap(slice3), slice3)
 
 	//a（配列）の値、サイズは変わってない
 	fmt.Printf("%T: %v, %v\n", a, a, len(a))
 
+	//④長さ2で容量3となる →　スライスの最初の要素から数えて、元となる配列の要素数なので容量3
+	slice4 := a[:2]
+	fmt.Printf("%T, %v, %v, %v\n", slice4, len(slice4), cap(slice4), slice4)
+
+	//⑤長さ3で容量3となる → 最初から長さ・容量３のスライスと同じ
+	slice5 := a[:]
+	fmt.Printf("%T, %v, %v, %v\n", slice5, len(slice5), cap(slice5), slice5)
 	fmt.Println("++++++++++++++++++++")
 
 	//スライスの代入
@@ -99,6 +106,22 @@ func main() {
 	fmt.Println(sl1) //sl2の要素を帰るとsl1の値も変化する
 
 
+	sl3 := []int{2, 4}
+	var sl4 []int
+
+	fmt.Printf("%T, %v, %v, %v\n", sl4, len(sl4), cap(sl4), sl4)
+	fmt.Println(sl4)
+
+	sl4 = sl3
+	fmt.Printf("%T, %v, %v, %v\n", sl4, len(sl4), cap(sl4), sl4)
+	fmt.Println(sl4)
+
+	sl4[0] = 3 //sl3の値も変わる
+	fmt.Printf("%T, %v, %v, %v\n", sl3, len(sl3), cap(sl3), sl3)
+	fmt.Printf("%T, %v, %v, %v\n", sl4, len(sl4), cap(sl4), sl4)
+
+	fmt.Println("====================")
+
 	//スライスのゼロ値はnil 長さと容量は0
 	var sli []int
 	fmt.Println(sli)
@@ -108,11 +131,36 @@ func main() {
 		fmt.Println("sli == nil !!!")
 	}
 
+	fmt.Println("====================")
+
 	//組み込み関数make()を用いたスライス作成.
 	//それぞれの要素がゼロ値であるスライスが作成される
 	test := make([]int, 3, 3)
 	fmt.Println(test)
 	// []int: [0 0 0], 3, 3
 	fmt.Printf("%T: %v, %v, %v\n", test, test, len(test), cap(test))
+
+	test2 := make([]map[string]int, 3)
+	fmt.Println(test2)
+
+	//mapの書き方
+	test2[0] = map[string] int{
+		"hoge": 1,
+		"fuga": 2,
+	}
+	fmt.Printf("%T: %v, %v, %v\n", test2, test2, len(test2), cap(test2))
+
+	maps := []map[string] int{
+		map[string] int {"a": 1, "b": 2},
+		map[string] int {"ai": 11, "ue": 22},
+		map[string] int {"aii": 111, "uee": 222},
+	}
+
+	for k, v := range maps {
+		//fmt.Println(k, v)
+		test2[k] = v
+		fmt.Printf("%T: %v, %v, %v\n", test2, test2, len(test2), cap(test2))
+	}
+
 
 }
