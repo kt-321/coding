@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func main() {
 	fmt.Print("test")
@@ -28,7 +30,7 @@ func main() {
 	//s = append(s, "non2")
 
 
-	//この書き方なら長さも容量も３
+	//スライスこの書き方なら長さも容量も３
 	s := []string{"hoge1", "none2", "none3"}
 
 	fmt.Printf("%T: %v, len:%v, cap:%v\n", s, s, len(s), cap(s))
@@ -44,4 +46,73 @@ func main() {
 	}
 
 	//TODO スライスに要素追加すると長さ・容量はどうなるか
+
+
+	//Arrays　スライスと違いサイズは固定。
+	//可変長 長さ３になる
+	a := [...]string{
+		"test1",
+		"test2",
+		"hoge1",
+	}
+	fmt.Printf("%T: %v, %v, %v\n", a[0], a[0], len(a), a)
+
+	//①配列をもとにスライスを作成。 [test1 test2]
+	//スライスの最初の要素から数えて、元となる配列の要素数
+	//startからend-1まで
+	//長さ２で容量3となる。→　スライスの最初の要素から数えて、元となる配列の要素数なので容量３
+	slice1 := a[0:2]
+	fmt.Printf("%T, %v, %v, %v\n", slice1, len(slice1), cap(slice1), slice1)
+	slice1[0] = "changed"
+	fmt.Printf("%T, %v, %v, %v\n", slice1, len(slice1), cap(slice1), slice1)
+
+	//a（配列）の値、サイズは変わってない
+	fmt.Printf("%T: %v, %v\n", a, a, len(a))
+
+	fmt.Println("++++++++++++++++++++")
+
+	//②長さ1で容量2となる  [test2] →　スライスの最初の要素から数えて、元となる配列の要素数なので容量２
+	slice2 := a[1:2]
+	fmt.Printf("%T, %v, %v, %v\n", slice2, len(slice2), cap(slice2), slice2)
+
+
+	//a（配列）の値、サイズは変わってない
+	fmt.Printf("%T: %v, %v\n", a, a, len(a))
+
+	//③長さ1で容量2となる  [test2] →　スライスの最初の要素から数えて、元となる配列の要素数なので容量２
+	slice3 := a[2:]
+	fmt.Printf("%T, %v, %v, %v\n", slice3, len(slice3), cap(slice3), slice3)
+
+	//a（配列）の値、サイズは変わってない
+	fmt.Printf("%T: %v, %v\n", a, a, len(a))
+
+	fmt.Println("++++++++++++++++++++")
+
+	//スライスの代入
+	sl1 := []string{"hoge", "fuga"}
+	var sl2 []string
+
+	sl2 = sl1
+	sl2[0] = "nyaho"
+
+	fmt.Println(sl2)
+	fmt.Println(sl1) //sl2の要素を帰るとsl1の値も変化する
+
+
+	//スライスのゼロ値はnil 長さと容量は0
+	var sli []int
+	fmt.Println(sli)
+	fmt.Printf("%T: %v, %v, %v\n", sli, sli, len(sli), cap(sli)) //[] 0 0
+
+	if sli == nil {
+		fmt.Println("sli == nil !!!")
+	}
+
+	//組み込み関数make()を用いたスライス作成.
+	//それぞれの要素がゼロ値であるスライスが作成される
+	test := make([]int, 3, 3)
+	fmt.Println(test)
+	// []int: [0 0 0], 3, 3
+	fmt.Printf("%T: %v, %v, %v\n", test, test, len(test), cap(test))
+
 }
