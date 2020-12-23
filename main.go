@@ -1,35 +1,37 @@
 package main
 
-import (
-	"fmt"
-	"math"
-)
+import "fmt"
 
-type ErrNegativeSqrt float64
-
-func (e ErrNegativeSqrt) Error() string {
-	return fmt.Sprintf("cannot Sqrt negative number: %v", float64(e))
+//クロージャは、それ自身の外部から変数を参照する関数値
+func adder() func(int) int {
+	sum := 0
+	return func(x int) int {
+		sum += x
+		return sum
+	}
 }
 
-func Sqrt(x float64) (float64, error) {
-	if x < 0 {
-		return 0, ErrNegativeSqrt(x)
-	}
-	z := float64(1)
-	s := float64(0)
-	for i:=0; i < 10; i ++ {
-		z -= (z*z - x) / (2*z)
-		//1e-10は1×10の-10乗
-		if math.Abs(z - s) < 1e-10 {
-			break;
-		}
-		s = z
-	}
 
-	return z, nil
+func subtract() func(int) int{
+	res := 0
+	return func (x int) int {
+		res -= x
+		return res
+	}
 }
 
 func main() {
-	fmt.Println(Sqrt(2))
-	fmt.Println(Sqrt(-2))
+	pos, neg := adder(), adder()
+	for i := 0; i < 10; i ++ {
+		fmt.Println(
+			pos(i),
+			neg(-2*i),
+		)
+	}
+
+	hoge, fuga := subtract(), subtract()
+	for i := 0; i < 10; i++ {
+		fmt.Println(hoge(i), fuga(-2*i))
+	}
+
 }
